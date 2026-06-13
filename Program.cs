@@ -84,3 +84,126 @@ namespace ControleOrdensServico
                 Console.WriteLine(os);
             }
         }
+        static void CriarOS()
+        {
+            Console.Clear();
+            Console.WriteLine("--- Abertura de Chamado ---");
+
+            Console.Write("Nome do Equipamento/Sistema: ");
+            string equipamento = Console.ReadLine().Trim();
+
+            Console.Write("Descrição do Defeito: ");
+            string defeito = Console.ReadLine().Trim();
+
+            if (string.IsNullOrEmpty(equipamento) || string.IsNullOrEmpty(defeito))
+            {
+                Console.WriteLine("\nErro: Todos os campos são obrigatórios!");
+                Console.ReadKey();
+                return;
+            }
+
+            bancoOS.Add(new OrdemServico
+            {
+                Id = proximoId++,
+                Equipamento = equipamento,
+                DescricaoDefeito = defeito,
+                Status = "Aberto",
+                DataAbertura = DateTime.Now
+            });
+
+            Console.WriteLine("\nOrdem de Serviço aberta com sucesso!");
+            Console.ReadKey();
+        }
+
+        static void AtualizarStatusOS()
+        {
+            Console.Write("\nDigite o ID da OS que deseja atualizar: ");
+            if (int.TryParse(Console.ReadLine(), out int id))
+            {
+                var os = bancoOS.FirstOrDefault(x => x.Id == id);
+                if (os != null)
+                {
+                    Console.WriteLine($"\nStatus atual: {os.Status}");
+                    Console.WriteLine("Escolha o novo status: 1. Aberto | 2. Em Andamento | 3. Concluído");
+                    Console.Write("Opção: ");
+
+                    string op = Console.ReadLine();
+                    if (op == "1") os.Status = "Aberto";
+                    else if (op == "2") os.Status = "Em Andamento";
+                    else if (op == "3") os.Status = "Concluído";
+                    else Console.WriteLine("Opção inválida. Status não alterado.");
+                }
+                else
+                {
+                    Console.WriteLine("Ordem de Serviço não encontrada.");
+                }
+            }
+            Console.ReadKey();
+        }
+
+        static void RemoverOS()
+        {
+            Console.Write("\nDigite o ID da OS que deseja remover/cancelar: ");
+            if (int.TryParse(Console.ReadLine(), out int id))
+            {
+                var os = bancoOS.FirstOrDefault(x => x.Id == id);
+                if (os != null)
+                {
+                    bancoOS.Remove(os);
+                    Console.WriteLine("\nOrdem de Serviço removida!");
+                }
+                else
+                {
+                    Console.WriteLine("ID não encontrado.");
+                }
+            }
+            Console.ReadKey();
+        }
+
+        static void SalvarOrdensNoArquivo()
+        {
+            try
+            {
+                var linhas = bancoOS.Select(x => $"{x.Id};{x.Equipamento};{x.DescricaoDefeito};{x.Status};{x.DataAbertura}");
+                File.WriteAllLines(arquivoOS, linhas);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Erro ao salvar dados: " + ex.Message);
+            }
+        }
+
+        static void CarregarOrdensDoArquivo()
+        {
+            try
+            {
+                if (File.Exists(arquivoOS))
+                {
+                    string[] linhas = File.ReadAllLines(arquivoOS);
+                    foreach (string linha in linhas)
+                    {
+                        string[] p = linha.Split(';');
+                        if (p.Length == 5)
+                        {
+                            var os = new OrdemServico
+                            {
+                                Id = int.Parse(p[0]),
+                                Equipamento = p[1],
+                                DescricaoDefeito = p[2],
+                                Status = p[3],
+                                DataAbertura = DateTime.Parse(p[4])
+                            };
+                            bancoOS.Add(os);
+
+                            if (os.Id >= proximoId) proximoId = os.Id + 1;
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                bancoOS = new List<OrdemServico>();
+            }
+        }
+    }
+}
